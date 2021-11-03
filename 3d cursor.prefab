@@ -118,8 +118,8 @@ MonoBehaviour:
   OwnershipTransfer: 0
   ObservedComponents:
   - {fileID: 4466017237789033670}
-  viewIdField: 0
-  InstantiationId: 3
+  viewIdField: 6
+  InstantiationId: 6
   isRuntimeInstantiated: 0
 --- !u!114 &4466017237789033670
 MonoBehaviour:
@@ -148,8 +148,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5d094e80ff20cc303856e5a582ce6833, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  interactiveObjectToInstanciate: {fileID: 3784347045487233940, guid: 99eb8540b9ee2334e8fe6648690ebc42, type: 3}
-  strenght: 150
+  catching: 0
+  target: {fileID: 0}
+  strength: 20
 --- !u!114 &2032717323034705997
 MonoBehaviour:
   m_ObjectHideFlags: 0

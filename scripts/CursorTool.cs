@@ -18,40 +18,38 @@ namespace WasaaMP {
 		
 		public void Catch () 
 		{
-			print ("Catch ?");
 			if (target != null) 
 			{
-				print ("Catch :");
 				if ((! caught) && (transform != target.transform))
 				{
 					target.Catch(this);
 					catching = true;
 					caught = true;
-					print ("Catch !");
+					target.photonView.RPC ("ShowColor", RpcTarget.All) ;
 				}
 				else
 				{
 					catching = false;
-					print ("Catch failed.");
+					target.photonView.RPC ("ShowColor", RpcTarget.All) ;
 				}
+				PhotonNetwork.SendAllOutgoingCommands () ;
 			}
 		}
 
 		public void Release () {
 			if (caught) {
-				print ("Release !") ;
 				target.Release(this);
 				caught = false ;
 				catching = false;
+				target.photonView.RPC ("HideColor", RpcTarget.All) ;
+				PhotonNetwork.SendAllOutgoingCommands () ;
 			}
 		}
 
 		void OnTriggerEnter (Collider other) {
 			if (! caught) {
-				print (name + " : CursorTool OnTriggerEnter") ;
 				target = other.gameObject.GetComponent<CubeManager> () ;
 				if (target != null) {
-					target.photonView.RPC ("ShowCatchable", RpcTarget.All) ;
 					PhotonNetwork.SendAllOutgoingCommands () ;
 				}
 			}
@@ -59,9 +57,8 @@ namespace WasaaMP {
 
 		void OnTriggerExit (Collider other) {
 			if (! caught) {
-				print (name + " : CursorTool OnTriggerExit") ;
 				if (target != null) {
-					target.photonView.RPC ("HideCatchable", RpcTarget.All) ;
+					target.photonView.RPC ("HideColor", RpcTarget.All) ;
 					PhotonNetwork.SendAllOutgoingCommands () ;
 					target = null ;
 				}
