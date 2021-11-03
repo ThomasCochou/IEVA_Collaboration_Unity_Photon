@@ -16,15 +16,16 @@ namespace WasaaMP {
         public Dictionary<int, Vector3> positions;
         public Dictionary<int, int> strengths;
         public int catchable = 0; //0: idle 1:catchable 2:!catchable
+        public int weight;
 
-        public int globalStrength;
+        public int strengthSum;
         public int clientsCount;
-        public Vector3 barycentre;
+        public Vector3 barycenter;
 
         public bool isMasterClient;
 
         public CursorTool client = null;
-        public int weight = 20;
+        
 
         
         void Start()
@@ -39,16 +40,21 @@ namespace WasaaMP {
             if (PhotonNetwork.IsConnected) 
             {
                ShowColor(); 
+               if(barycenter != Vector3.zero && catchable == 1)
+               {
+                    transform.position = barycenter;
+               }
             }
             
     
-            if(photonView.IsMine || !PhotonNetwork.IsConnected)
+            if(photonView.IsMine)
             {
                 isMasterClient = true;
             }
 
             if(client && !isMasterClient)
             {
+                print("client "+barycenter);
                 photonView.RPC("UpdatePosition", RpcTarget.All, client.transform.position);
                 photonView.RPC("UpdateStrength", RpcTarget.All, client.strength);
             }
@@ -57,31 +63,29 @@ namespace WasaaMP {
             {
                 clientsCount = 0;
                 clientsCount = positions.Count;
-                globalStrength = 0;
-                globalStrength = strengths.Sum(x => x.Value);
+                strengthSum = 0;
+                strengthSum = strengths.Sum(x => x.Value);
 
-                barycentre = Vector3.zero;
+                barycenter = Vector3.zero;
                 foreach(KeyValuePair<int, Vector3> entry in positions)
                 {
-                    barycentre += entry.Value;
+                    barycenter = barycenter + entry.Value;
                 }
 
                 if(client)
                 {
                     clientsCount = clientsCount + 1;
-                    globalStrength = globalStrength + client.strength;
-                    barycentre = barycentre + client.transform.position;
+                    strengthSum = strengthSum + client.strength;
+                    barycenter = barycenter + client.transform.position;
                 }
 
-                print("clientsCount "+clientsCount);
-                print("globalStrength "+globalStrength);
-
-                if (globalStrength >= weight && clientsCount > 0)
+                if (strengthSum >= weight && clientsCount > 0)
                 {
                     catchable = 1;
                     photonView.RPC("UpdateCatchable", RpcTarget.All, 1);
-                    barycentre = barycentre / clientsCount;
-                    transform.position = barycentre;
+
+                    barycenter = barycenter / clientsCount;
+                    photonView.RPC("UpdateBarycenter", RpcTarget.All, barycenter);
                 }
                 else if (clientsCount > 0)
                 {
@@ -97,26 +101,14 @@ namespace WasaaMP {
         }
 
         public void Catch(CursorTool client) {
-            if (this.client == null)
-            {
-                this.client = client;
-            }
+            this.client = client;
         }
 
         public void Release(CursorTool client) {
-            if (this.client == client)
+            this.client = null;
+            if (!isMasterClient)
             {
-                this.client = null;
-                if (!isMasterClient)
-                {
-                    photonView.RPC("UpdateRelease", RpcTarget.All);
-                }
-                else
-                {
-                    clientsCount = clientsCount - 1;
-                    globalStrength = globalStrength - client.strength;
-                    barycentre = barycentre - client.transform.position;
-                }
+                photonView.RPC("UpdateRelease", RpcTarget.All);
             }
         }
 
@@ -137,6 +129,10 @@ namespace WasaaMP {
             catchable = value;
         }
 
+        [PunRPC] private void UpdateBarycenter(Vector3 value) {
+            barycenter = value;
+        }
+
         [PunRPC] public void ShowColor () {
             if (catchable == 1) {
                 Renderer renderer = GetComponentInChildren <Renderer> () ;
@@ -144,7 +140,6 @@ namespace WasaaMP {
                 colorBeforeHighlight = renderer.material.color ;
                 Color c = Color.cyan ;
                 renderer.material.color = new Color (c.r, c.g, c.b, 0.5f) ;
-                PhotonNetwork.SendAllOutgoingCommands () ;
             }
             if (catchable == 2) {
                 Renderer renderer = GetComponentInChildren <Renderer> () ;
@@ -152,7 +147,6 @@ namespace WasaaMP {
                 colorBeforeHighlight = renderer.material.color ;
                 Color c = Color.red ;
                 renderer.material.color = new Color (c.r, c.g, c.b, 0.5f) ;
-                PhotonNetwork.SendAllOutgoingCommands () ;
             }
             if (catchable == 0){
                 Renderer renderer = GetComponentInChildren <Renderer> () ;
@@ -160,7 +154,6 @@ namespace WasaaMP {
                 colorBeforeHighlight = renderer.material.color ;
                 Color c = Color.yellow ;
                 renderer.material.color = new Color (c.r, c.g, c.b, 0.5f) ;
-                PhotonNetwork.SendAllOutgoingCommands () ;
             }
         }
         
