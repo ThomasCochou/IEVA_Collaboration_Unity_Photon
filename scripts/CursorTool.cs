@@ -25,12 +25,10 @@ namespace WasaaMP {
 					target.Catch(this);
 					catching = true;
 					caught = true;
-					target.photonView.RPC ("ShowColor", RpcTarget.All) ;
 				}
 				else
 				{
 					catching = false;
-					target.photonView.RPC ("ShowColor", RpcTarget.All) ;
 				}
 				PhotonNetwork.SendAllOutgoingCommands () ;
 			}
@@ -41,7 +39,6 @@ namespace WasaaMP {
 				target.Release(this);
 				caught = false ;
 				catching = false;
-				target.photonView.RPC ("HideColor", RpcTarget.All) ;
 				PhotonNetwork.SendAllOutgoingCommands () ;
 			}
 		}
@@ -58,7 +55,6 @@ namespace WasaaMP {
 		void OnTriggerExit (Collider other) {
 			if (! caught) {
 				if (target != null) {
-					target.photonView.RPC ("HideColor", RpcTarget.All) ;
 					PhotonNetwork.SendAllOutgoingCommands () ;
 					target = null ;
 				}

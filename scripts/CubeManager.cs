@@ -7,7 +7,6 @@ using System.Linq;
 namespace WasaaMP {
     public class CubeManager : MonoBehaviourPun
     {  
-        private bool catchable;
         private bool caught = false;
 
         private Color colorBeforeHighlight ;
@@ -16,6 +15,7 @@ namespace WasaaMP {
 
         public Dictionary<int, Vector3> positions;
         public Dictionary<int, int> strengths;
+        public int catchable = 0; //0: idle 1:catchable 2:!catchable
 
         public int globalStrength;
         public int clientsCount;
@@ -35,9 +35,22 @@ namespace WasaaMP {
 
         void Update()
         {
+
+            if (PhotonNetwork.IsConnected) 
+            {
+               ShowColor(); 
+            }
+            
+    
             if(photonView.IsMine || !PhotonNetwork.IsConnected)
             {
                 isMasterClient = true;
+            }
+
+            if(client && !isMasterClient)
+            {
+                photonView.RPC("UpdatePosition", RpcTarget.All, client.transform.position);
+                photonView.RPC("UpdateStrength", RpcTarget.All, client.strength);
             }
 
             if (isMasterClient)
@@ -60,25 +73,27 @@ namespace WasaaMP {
                     barycentre = barycentre + client.transform.position;
                 }
 
+                print("clientsCount "+clientsCount);
+                print("globalStrength "+globalStrength);
+
                 if (globalStrength >= weight && clientsCount > 0)
                 {
-                    catchable = true;
+                    catchable = 1;
+                    photonView.RPC("UpdateCatchable", RpcTarget.All, 1);
                     barycentre = barycentre / clientsCount;
                     transform.position = barycentre;
-                    PhotonNetwork.SendAllOutgoingCommands () ;
                 }
-                else if (!(globalStrength >= weight && clientsCount > 0))
+                else if (clientsCount > 0)
                 {
-                    catchable = false;
+                    catchable = 2;
+                    photonView.RPC("UpdateCatchable", RpcTarget.All, 2);
                 }
-            }
-
-            else if (client)
-            {
-                photonView.RPC("UpdatePosition", RpcTarget.All, client.transform.position);
-                photonView.RPC("UpdateStrength", RpcTarget.All, client.strength);
-                PhotonNetwork.SendAllOutgoingCommands () ;
-            }   
+                else if (PhotonNetwork.IsConnected)
+                {
+                    catchable = 0;
+                    photonView.RPC("UpdateCatchable", RpcTarget.All, 0);
+                }
+            } 
         }
 
         public void Catch(CursorTool client) {
@@ -105,8 +120,6 @@ namespace WasaaMP {
             }
         }
 
-
-
         [PunRPC] private void UpdateStrength(int strength, PhotonMessageInfo info) {
             strengths[info.Sender.ActorNumber] = strength;
         }
@@ -120,8 +133,12 @@ namespace WasaaMP {
             strengths.Remove(info.Sender.ActorNumber);
         }
 
+        [PunRPC] private void UpdateCatchable(int value) {
+            catchable = value;
+        }
+
         [PunRPC] public void ShowColor () {
-            if (catchable) {
+            if (catchable == 1) {
                 Renderer renderer = GetComponentInChildren <Renderer> () ;
                 oldAlpha = renderer.material.color.a ;
                 colorBeforeHighlight = renderer.material.color ;
@@ -129,7 +146,7 @@ namespace WasaaMP {
                 renderer.material.color = new Color (c.r, c.g, c.b, 0.5f) ;
                 PhotonNetwork.SendAllOutgoingCommands () ;
             }
-            else if (!catchable) {
+            if (catchable == 2) {
                 Renderer renderer = GetComponentInChildren <Renderer> () ;
                 oldAlpha = renderer.material.color.a ;
                 colorBeforeHighlight = renderer.material.color ;
@@ -137,15 +154,14 @@ namespace WasaaMP {
                 renderer.material.color = new Color (c.r, c.g, c.b, 0.5f) ;
                 PhotonNetwork.SendAllOutgoingCommands () ;
             }
-        }
-
-        [PunRPC] public void HideColor () {
-            Renderer renderer = GetComponentInChildren <Renderer> () ;
-            oldAlpha = renderer.material.color.a ;
-            colorBeforeHighlight = renderer.material.color ;
-            Color c = Color.yellow ;
-            renderer.material.color = new Color (c.r, c.g, c.b, 0.5f) ;
-            PhotonNetwork.SendAllOutgoingCommands () ;
+            if (catchable == 0){
+                Renderer renderer = GetComponentInChildren <Renderer> () ;
+                oldAlpha = renderer.material.color.a ;
+                colorBeforeHighlight = renderer.material.color ;
+                Color c = Color.yellow ;
+                renderer.material.color = new Color (c.r, c.g, c.b, 0.5f) ;
+                PhotonNetwork.SendAllOutgoingCommands () ;
+            }
         }
         
     }
